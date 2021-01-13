@@ -1,4 +1,4 @@
-# mlops-k8s-gateway
+# mlops-kube-gateway
 
 Web service for integration of third-party tools that require direct access to k8s (like Seldon, Algorithmia, MLFlow) with Neu.ro platform.
 

@@ -1,0 +1,98 @@
+# apiVersion: v1
+# kind: Namespace
+# metadata:
+#   name: mlops-integrations
+# ---
+# Single service account for this microservice
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: mlops-kube-gateway
+  namespace: mlops-integrations
+---
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlops-kube-gateway
+  namespace: mlops-integrations
+spec:
+  selector:
+    matchLabels:
+      run: mlops-kube-gateway
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: mlops-kube-gateway
+    spec:
+      serviceAccountName: mlops-kube-gateway
+      containers:
+        - name: main
+          image: python:3.7
+          ports:
+          - containerPort: 8080
+          env:
+            - name: MKG_NEURO_CP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-token
+                  key: neuro-compute-token
+            - name: MKG_SELDON_MODEL_NAME
+              value: "my-model"
+            - name: MKG_MLFLOW_URI
+              value: "https://startup-package-test-mlflow-server--yevheniisemendiak.jobs.neuro-compute.org.neu.ro"
+            - name: MKG_SELDON_MODEL_STAGE
+              value: "Production"
+            - name: MKG_NEURO_MODEL_IMAGE_REF
+              value: "registry.onprem-poc.org.neu.ro/yevheniisemendiak/startup_package_test/seldon:20.12.16"
+            - name: MKG_NEURO_CLUSTER
+              value: "neuro-compute"
+            - name: MKG_NEURO_USER
+              value: "yevheniisemendiak"
+          command:
+            - "/bin/bash"
+            - "-c"
+            - >-
+              echo "Installing kubectl"
+              && curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.20.1/bin/linux/amd64/kubectl
+              && chmod +x ./kubectl
+              && mv ./kubectl /usr/local/bin/kubectl
+              && kubectl version --client
+              && echo "Installing the app"
+              && GIT_BRANCH=master
+              && pip install git+https://github.com/neuro-inc/mlops-kube-gateway.git@${GIT_BRANCH}#egg=mlops-kube-gateway
+              && echo "Running the app"
+              && mlops-kube-gateway
+#---
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: mlops-kube-gateway
+#  namespace: mlops-integrations
+#  labels:
+#    run: mlops-kube-gateway
+#spec:
+#  ports:
+#  - port: 80
+#    targetPort: 8080
+#    protocol: TCP
+#  selector:
+#    run: mlops-kube-gateway
+#---
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: mlops-kube-gateway
+#  namespace: mlops-integrations
+#  labels:
+#    run: mlops-kube-gateway
+#spec:
+#  rules:
+#  - host: mlops-kube-gateway.jobs.onprem-poc.org.neu.ro
+#    http:
+#      paths:
+#      - backend:
+#          serviceName: mlops-kube-gateway
+#          servicePort: 80

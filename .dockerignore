@@ -1,9 +1,0 @@
-*
-!dist
-!platform_integrations.egg-info
-
-!Makefile
-!tests
-!requirements
-
-**/*.pyc

@@ -39,18 +39,6 @@ spec:
                 secretKeyRef:
                   name: neuro-token
                   key: neuro-compute-token
-            - name: MKG_SELDON_MODEL_NAME
-              value: "my-model"
-            - name: MKG_MLFLOW_URI
-              value: "https://startup-package-test-mlflow-server--yevheniisemendiak.jobs.neuro-compute.org.neu.ro"
-            - name: MKG_SELDON_MODEL_STAGE
-              value: "Production"
-            - name: MKG_NEURO_MODEL_IMAGE_REF
-              value: "registry.onprem-poc.org.neu.ro/yevheniisemendiak/startup_package_test/seldon:20.12.16"
-            - name: MKG_NEURO_CLUSTER
-              value: "neuro-compute"
-            - name: MKG_NEURO_USER
-              value: "yevheniisemendiak"
           command:
             - "/bin/bash"
             - "-c"

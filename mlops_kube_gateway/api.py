@@ -116,7 +116,7 @@ async def poll_mlflow(env):
     model_stage = env.get("MKG_SELDON_MODEL_STAGE", "Production")
 
     mlflow_uri_base = env.get("MKG_MLFLOW_URI", "https://open-source-stack-mlflow-server--yevheniisemendiak.jobs.neuro-compute.org.neu.ro")
-    neuro_model_image_ref = env.get("MKG_NEURO_MODEL_IMAGE_REF", "registry.onprem-poc.org.neu.ro/yevheniisemendiak/mlops_open_source_stack_trial/seldon:20.12.16")
+    neuro_model_image_ref = env.get("MKG_NEURO_MODEL_IMAGE_REF", "registry.onprem-poc.org.neu.ro/yevheniisemendiak/startup_package_test/seldon:20.12.16")
     neuro_cluster = env.get("MKG_NEURO_CLUSTER", "neuro-compute")
     neuro_user = env.get("MKG_NEURO_USER", "yevheniisemendiak")
 

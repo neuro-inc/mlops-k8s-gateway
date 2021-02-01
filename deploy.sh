@@ -11,14 +11,13 @@ kubectl delete -f k8s/deployment.yaml
 kubectl config use-context onprem-poc
 kubectl create namespace mlops-integrations || echo Namespace exists
 MLFLOW_NEURO_USER=artemyushkovskiy
-SELDON_NEURO_USER=artemyushkovskiy
 neuro config switch-cluster neuro-compute
 kubectl -n mlops-integrations create secret generic neuro-config \
     --from-literal=mlflow_neuro_cp_token=$(neuro config show-token) \
     --from-literal=mlflow_neuro_user=${MLFLOW_NEURO_USER} \
     --from-literal=mlflow_neuro_job_name=ml-recipe-bone-age-mlflow-server \
     --from-literal=mlflow_neuro_project_storage=storage://neuro-compute/${MLFLOW_NEURO_USER}/ml_recipe_bone_age \
-    --from-literal=seldon_neuro_image=image://onprem-poc/${SELDON_NEURO_USER}/ml_recipe_bone_age/seldon:21.1.23 \
+    --from-literal=seldon_neuro_image=image://onprem-poc/yevheniisemendiak/startup_package_test/seldon:20.12.16 \
     --from-literal=seldon_model_name=my-model \
     --from-literal=seldon_model_stage=Production
 kubectl apply -f k8s/seldon-roles.yaml

@@ -53,7 +53,7 @@ async def _create_seldon_deployment(
                 "image": "neuromation/neuro-extras:latest",
                 "imagePullPolicy": "Always",
                 "command": ["bash", "-c"],
-                "args": [f"neuro --verbose cp {model_storage_uri} /storage/model.h5"],
+                "args": [f"neuro --verbose cp {model_storage_uri} /storage"],
                 "volumeMounts": [
                     {"mountPath": "/storage", "name": "neuro-storage"},
                 ],

@@ -9,7 +9,7 @@ kubectl delete -f k8s/deployment.yaml
 
 # Deploy
 kubectl config use-context onprem-poc
-kubectl create namespace mlops-integrations || echo exists!
+kubectl create namespace mlops-integrations || echo Namespace exists
 MLFLOW_NEURO_USER=artemyushkovskiy
 SELDON_NEURO_USER=artemyushkovskiy
 neuro config switch-cluster neuro-compute

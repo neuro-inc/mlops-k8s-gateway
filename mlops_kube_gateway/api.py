@@ -53,7 +53,7 @@ async def _create_seldon_deployment(
                 "image": "neuromation/neuro-extras:latest",
                 "imagePullPolicy": "Always",
                 "command": ["bash", "-c"],
-                "args": [f"neuro cp {model_storage_uri} /storage"],
+                "args": [f"neuro --verbose cp {model_storage_uri} /storage"],
                 "volumeMounts": [
                     {"mountPath": "/storage", "name": "neuro-storage"},
                 ],
@@ -154,7 +154,8 @@ async def poll_mlflow(env):
     seldon_neuro_image = env.get("MKG_SELDON_NEURO_IMAGE", f"image://onprem-poc/artemyushkovsky/ml_recipe_bone_age/seldon:21.1.23")
     seldon_neuro_image_ref = _full_neuro_image_to_ref(seldon_neuro_image)
 
-    DELAY = 3
+    DELAY = 5
+
     prev_version = None
     model_versions_uri = f"{mlflow_url}/registered-models/get-latest-versions?name={seldon_model_name}&stages={seldon_model_stage}"
     logger.info(f"Starting polling {model_versions_uri} with delay {DELAY} sec")
@@ -162,7 +163,7 @@ async def poll_mlflow(env):
         try:
             async with aiohttp.ClientSession() as session:
                 await asyncio.sleep(DELAY)
-                logger.info(f"Polling model status: '{seldon_model_name}' stage '{seldon_model_stage}', url '{mlflow_uri_base}'")
+                logger.info(f"Polling {mlflow_uri_base}: model '{seldon_model_name}' stage '{seldon_model_stage}'")
                 async with session.get(model_versions_uri) as resp:
                     assert resp.status == 200, (resp.status, await resp.text())
                     data = await resp.json()
@@ -183,8 +184,8 @@ async def poll_mlflow(env):
                                 run_info = metrics_data["info"]
                                 logger.info(f"Model run info:\n{yaml.dump(run_info)}")
 
-                                model_params = metrics_data["data"]["params"]
-                                logger.info(f"Model params:\n{yaml.dump(model_params)}")
+                                # model_params = metrics_data["data"]["params"]
+                                # logger.info(f"Model params:\n{yaml.dump(model_params)}")
 
                                 model_metrics = metrics_data["data"]["metrics"]
                                 logger.info(f"Model metrics:\n{yaml.dump(model_metrics)}")
@@ -198,7 +199,7 @@ async def poll_mlflow(env):
                         assert model_source.startswith('/usr/local/share/'), model_source
                         assert model_source.endswith('/artifacts/model'), model_source
                         model_subpath = model_source[len('/usr/local/share/'):]
-                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/model.h5"
+                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/model.*"
                         deployment_json = await _create_seldon_deployment(
                             name=seldon_model_name,
                             seldon_neuro_passed_config=seldon_neuro_passed_config,
@@ -211,10 +212,8 @@ async def poll_mlflow(env):
                         path = Path(tempfile.mktemp())
                         path.write_text(deployment)
                         subprocess.run(f"kubectl apply -f {path}", shell=True, check=True)
-                        # import asyncio.subprocess
-                        # asyncio.subprocess.run(f"kubectl apply -f {path}", shell=True, check=True)
                         prev_version = model_version
-                        # logger.info(f"Successfully deployed, from temp path {path}")
+                        logger.info(f"Model version={model_version} successfully deployed!")
                     # else:
                     #     logger.info(f"Found same version: {model_version}")
 
@@ -230,5 +229,6 @@ async def poll_mlflow(env):
 
 def main():
     logging.basicConfig(level=logging.DEBUG, 
-                        format='%(asctime)s %(levelname)s %(message)s')
+                        format='%(asctime)s %(levelname)s %(message)s',
+                        datefmt='%Y-%m-%d %H:%M:%S')
     asyncio.run(poll_mlflow(os.environ))

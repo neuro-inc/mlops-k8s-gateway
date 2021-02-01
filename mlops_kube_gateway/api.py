@@ -53,7 +53,7 @@ async def _create_seldon_deployment(
                 "image": "neuromation/neuro-extras:latest",
                 "imagePullPolicy": "Always",
                 "command": ["bash", "-c"],
-                "args": [f"neuro --verbose cp {model_storage_uri} /storage"],
+                "args": [f"neuro --verbose cp {model_storage_uri} /storage/model.h5"],
                 "volumeMounts": [
                     {"mountPath": "/storage", "name": "neuro-storage"},
                 ],
@@ -199,7 +199,7 @@ async def poll_mlflow(env):
                         assert model_source.startswith('/usr/local/share/'), model_source
                         assert model_source.endswith('/artifacts/model'), model_source
                         model_subpath = model_source[len('/usr/local/share/'):]
-                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/model.*"
+                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/model.pth"
                         deployment_json = await _create_seldon_deployment(
                             name=seldon_model_name,
                             seldon_neuro_passed_config=seldon_neuro_passed_config,

@@ -21,7 +21,7 @@ kubectl -n mlops-integrations create secret generic neuro-config \
     --from-literal=seldon_neuro_image=image://onprem-poc/${SELDON_NEURO_USER}/ml_recipe_bone_age/seldon:21.1.23 \
     --from-literal=seldon_model_file_name=model.pth \
     --from-literal=seldon_model_name=my-model \
-    --from-literal=seldon_model_stage=Production \
+    --from-literal=seldon_model_stage=Production
 kubectl apply -f k8s/seldon-roles.yaml
 kubectl apply -f k8s/deployment.yaml
 

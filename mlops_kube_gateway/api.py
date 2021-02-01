@@ -150,6 +150,7 @@ async def poll_mlflow(env):
     # Settings of the second cluster where Seldon is deployed (onprem-poc):
     seldon_model_name = env.get("MKG_SELDON_MODEL_NAME", "my-model")
     seldon_model_stage = env.get("MKG_SELDON_MODEL_STAGE", "Production")
+    seldon_model_file_name = env.get("MKG_SELDON_MODEL_FILE_NAME", "model.pth")
     seldon_neuro_registry_secret_name = env.get("MKG_SELDON_NEURO_REGISTRY_SECRET_NAME", "neuro-registry")
     seldon_neuro_image = env.get("MKG_SELDON_NEURO_IMAGE", f"image://onprem-poc/artemyushkovsky/ml_recipe_bone_age/seldon:21.1.23")
     seldon_neuro_image_ref = _full_neuro_image_to_ref(seldon_neuro_image)
@@ -199,7 +200,7 @@ async def poll_mlflow(env):
                         assert model_source.startswith('/usr/local/share/'), model_source
                         assert model_source.endswith('/artifacts/model'), model_source
                         model_subpath = model_source[len('/usr/local/share/'):]
-                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/model.pth"
+                        model_storage_uri = f"{mlflow_neuro_project_storage}/{model_subpath}/data/{seldon_model_file_name}"
                         deployment_json = await _create_seldon_deployment(
                             name=seldon_model_name,
                             seldon_neuro_passed_config=seldon_neuro_passed_config,

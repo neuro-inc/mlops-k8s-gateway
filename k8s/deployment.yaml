@@ -64,6 +64,11 @@ spec:
                 secretKeyRef:
                   name: neuro-config
                   key: seldon_model_name
+            - name: MKG_SELDON_MODEL_FILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: seldon_model_file_name
             - name: MKG_SELDON_MODEL_STAGE
               valueFrom:
                 secretKeyRef:

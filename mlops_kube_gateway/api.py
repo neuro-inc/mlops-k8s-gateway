@@ -111,6 +111,7 @@ async def poll_mlflow(env):
     logger.info(f"Environment:\n{env_str}")
 
     neuro_cp_token = env["MKG_NEURO_CP_TOKEN"]
+    project_name = env["MKG_NEURO_PROJECT_NAME"]
 
     model_name = env.get("MKG_SELDON_MODEL_NAME", "my-model")
     model_stage = env.get("MKG_SELDON_MODEL_STAGE", "Production")
@@ -177,7 +178,7 @@ async def poll_mlflow(env):
                         assert model_source.startswith('/usr/local/share/'), model_source
                         assert model_source.endswith('/artifacts/model'), model_source
                         model_subpath = model_source[len('/usr/local/share/'):]
-                        model_storage_uri = f"storage://{neuro_cluster}/{neuro_user}/mlops_open_source_stack_trial/{model_subpath}/data/model.h5"
+                        model_storage_uri = f"storage://{neuro_cluster}/{neuro_user}/{project_name}/{model_subpath}/data/model.h5"
 
                         deployment_json = await _create_seldon_deployment(
                             name=model_name,
@@ -209,5 +210,6 @@ async def poll_mlflow(env):
             pass
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG, 
+                        format='%(asctime)s %(levelname)s %(message)s')
     asyncio.run(poll_mlflow(os.environ))

@@ -34,6 +34,8 @@ spec:
           ports:
           - containerPort: 8080
           env:
+            - name: MKG_NEURO_PROJECT_NAME
+              value: ml-recipe-bone-age
             - name: MKG_NEURO_CP_TOKEN
               valueFrom:
                 secretKeyRef:

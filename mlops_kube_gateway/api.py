@@ -170,7 +170,9 @@ async def poll_mlflow(env):
                     data = await resp.json()
                     model_metadata = data["model_versions"][0]
                     model_version = model_metadata["version"]
-                    if prev_version is None or model_version != prev_version:
+                    if prev_version is not None and model_version == prev_version:
+                        logger.info(f"Model is already deployed: version={model_version}")
+                    else:
                         logger.info("")
                         logger.info(f"Deploying model version={model_version}")
                         logger.info(f"Model metadata:\n{yaml.dump(model_metadata)}")

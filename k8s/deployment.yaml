@@ -34,13 +34,46 @@ spec:
           ports:
           - containerPort: 8080
           env:
-            - name: MKG_NEURO_PROJECT_NAME
-              value: ml-recipe-bone-age
-            - name: MKG_NEURO_CP_TOKEN
+            - name: MKG_MLFLOW_NEURO_CP_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: neuro-token
-                  key: neuro-compute-token
+                  name: neuro-config
+                  key: mlflow_neuro_cp_token
+            - name: MKG_MLFLOW_NEURO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: mlflow_neuro_user
+            - name: MKG_MLFLOW_NEURO_JOB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: mlflow_neuro_job_name
+            - name: MKG_MLFLOW_NEURO_PROJECT_STORAGE
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: mlflow_neuro_project_storage
+            - name: MKG_SELDON_NEURO_IMAGE
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: seldon_neuro_image
+            - name: MKG_SELDON_MODEL_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: seldon_model_name
+            - name: MKG_SELDON_MODEL_FILE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: seldon_model_file_name
+            - name: MKG_SELDON_MODEL_STAGE
+              valueFrom:
+                secretKeyRef:
+                  name: neuro-config
+                  key: seldon_model_stage
           command:
             - "/bin/bash"
             - "-c"

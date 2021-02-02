@@ -84,7 +84,7 @@ spec:
               && mv ./kubectl /usr/local/bin/kubectl
               && kubectl version --client
               && echo "Installing the app"
-              && GIT_BRANCH=master
+              && GIT_BRANCH=test
               && pip install git+https://github.com/neuro-inc/mlops-kube-gateway.git@${GIT_BRANCH}#egg=mlops-kube-gateway
               && echo "Running the app"
               && mlops-kube-gateway

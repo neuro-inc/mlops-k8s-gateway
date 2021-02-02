@@ -155,7 +155,7 @@ async def poll_mlflow(env):
     seldon_neuro_image = env.get("MKG_SELDON_NEURO_IMAGE", f"image://onprem-poc/artemyushkovsky/ml_recipe_bone_age/seldon:21.1.23")
     seldon_neuro_image_ref = _full_neuro_image_to_ref(seldon_neuro_image)
 
-    DELAY = 5
+    DELAY = 2
 
     prev_run_id = None
     model_versions_uri = f"{mlflow_url}/registered-models/get-latest-versions?name={seldon_model_name}&stages={seldon_model_stage}"

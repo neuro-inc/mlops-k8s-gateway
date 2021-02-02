@@ -157,7 +157,7 @@ async def poll_mlflow(env):
 
     DELAY = 5
 
-    prev_version = None
+    prev_run_id = None
     model_versions_uri = f"{mlflow_url}/registered-models/get-latest-versions?name={seldon_model_name}&stages={seldon_model_stage}"
     logger.info(f"Starting polling {model_versions_uri} with delay {DELAY} sec")
     while True:
@@ -171,30 +171,22 @@ async def poll_mlflow(env):
                     model_metadata = data["model_versions"][0]
                     model_version = model_metadata["version"]
 
-                    run_info = ""
-                    model_metrics = {}
-                    try:
-                        run_id = model_metadata["run_id"]
-                        model_metrics_uri = f"{mlflow_url}/runs/get?run_id={run_id}"
-                        async with session.get(model_metrics_uri) as r:
-                            assert r.status == 200, (r.status, await r.text())
-                            metrics_data = await r.json()
-                            metrics_data = metrics_data["run"]
-                            run_info = metrics_data["info"]
-                            run_id = run_info["run_id"]
-                            # model_params = metrics_data["data"]["params"]
-                            model_metrics = metrics_data["data"]["metrics"]
-                    except asyncio.CancelledError:
-                        raise
-                    except BaseException as e:
-                        logger.warning(f"Could not get model metrics: {e}")
+                    run_id = model_metadata["run_id"]
+                    model_metrics_uri = f"{mlflow_url}/runs/get?run_id={run_id}"
+                    async with session.get(model_metrics_uri) as r:
+                        assert r.status == 200, (r.status, await r.text())
+                        metrics_data = await r.json()
+                        metrics_data = metrics_data["run"]
+                        run_info = metrics_data["info"]
+                        run_id = run_info["run_id"]
+                        # model_params = metrics_data["data"]["params"]
+                        model_metrics = metrics_data["data"]["metrics"]
 
-
-                    if prev_version is not None and model_version == prev_version:
-                        logger.info(f"Already deployed: model version={model_version} run_id={run_id}")
+                    if prev_run_id and run_id == prev_run_id:
+                        logger.info(f"Already deployed: model run_id={run_id} version={model_version}")
                     else:
                         logger.info("")
-                        logger.info(f"Deploying model version={model_version} run_id={run_id}")
+                        logger.info(f"Deploying model run_id={run_id} version={model_version}")
                         logger.info(f"Model metadata:\n{yaml.dump(model_metadata)}")
                         # logger.info(f"Model run info:\n{yaml.dump(run_info)}")
                         logger.info(f"Model metrics:\n{yaml.dump(model_metrics)}")
@@ -217,8 +209,8 @@ async def poll_mlflow(env):
                         path = Path(tempfile.mktemp())
                         path.write_text(deployment)
                         subprocess.run(f"kubectl apply -f {path}", shell=True, check=True)
-                        prev_version = model_version
-                        logger.info(f"Model version={model_version} successfully deployed!")
+                        logger.info(f"Model run_id={run_id} version={model_version} successfully deployed!")
+                        prev_run_id = run_id
                     # else:
                     #     logger.info(f"Found same version: {model_version}")
 

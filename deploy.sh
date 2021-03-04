@@ -1,27 +1,24 @@
 #!/bin/bash
 
 # Cleaup all
-kubectl config use-context onprem-poc
-kubectl -n mlops-integrations delete secret neuro-config
-kubectl -n seldon delete seldondeployment my-model
+kubectl config use-context onprem-poc   # TODO: parameterize
+kubectl -n mlops-integrations delete secret neuro-config      # TODO: parameterize
 kubectl delete -f k8s/seldon-roles.yaml
 kubectl delete -f k8s/deployment.yaml
 
 # Deploy
 kubectl config use-context onprem-poc
 kubectl create namespace mlops-integrations || echo Namespace exists
-MLFLOW_NEURO_USER=artemyushkovskiy
-SELDON_NEURO_USER=artemyushkovskiy
-neuro config switch-cluster neuro-compute
+neuro config switch-cluster neuro-compute   # TODO: parameterize
+
+MLFLOW_HOST=https://ml-recipe-bone-age-mlflow-server--yevheniisemendiak.jobs.neuro-compute.org.neu.ro
+MLFLOW_STORAGE_ROOT=storage:ml_recipe_bone_age/mlruns   # TODO: parameterize all those values
+SELDON_IMAGE_BASE_NAME=image:ml_recipe_bone_age/inference
 kubectl -n mlops-integrations create secret generic neuro-config \
-    --from-literal=mlflow_neuro_cp_token=$(neuro config show-token) \
-    --from-literal=mlflow_neuro_user=${MLFLOW_NEURO_USER} \
-    --from-literal=mlflow_neuro_job_name=ml-recipe-bone-age-mlflow-server \
-    --from-literal=mlflow_neuro_project_storage=storage://neuro-compute/${MLFLOW_NEURO_USER}/ml_recipe_bone_age \
-    --from-literal=seldon_neuro_image=image://onprem-poc/${SELDON_NEURO_USER}/ml_recipe_bone_age/seldon:21.1.23 \
-    --from-literal=seldon_model_file_name=model.pth \
-    --from-literal=seldon_model_name=my-model \
-    --from-literal=seldon_model_stage=Production
+    --from-literal=neuro_token=$(neuro config show-token) \
+    --from-literal=mlflow_host=$MLFLOW_HOST\
+    --from-literal=mlflow_storage_root=$MLFLOW_STORAGE_ROOT\
+    --from-literal=seldon_neuro_img_base_name=$SELDON_IMAGE_BASE_NAME\ 
 kubectl apply -f k8s/seldon-roles.yaml
 kubectl apply -f k8s/deployment.yaml
 

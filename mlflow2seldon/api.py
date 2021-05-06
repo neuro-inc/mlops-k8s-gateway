@@ -8,7 +8,7 @@ import asyncio
 import urllib.request
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Dict
 
 from yarl import URL
 from neuro_sdk import Factory, Client, Storage
@@ -22,7 +22,6 @@ DELAY = 2
 @dataclass
 class _DeployedModel:
     image: str
-    model_file: str
     model_name: str
     model_storage_uri: URL
     model_stage: str
@@ -45,7 +44,7 @@ class _DeployedModel:
         return f"{self.model_stage}/{self.model_name}"
 
 
-async def poll_mlflow(env: Mapping):
+async def poll_mlflow(env: Dict):
 
     # Settings of the source cluster, where MLflow is deployed:
     mlflow_neuro_token = env["M2S_MLFLOW_NEURO_TOKEN"]
@@ -63,8 +62,8 @@ async def poll_mlflow(env: Mapping):
 
     default_image_ref = neuro_client.parse.remote_image(default_image).as_docker_url()
 
-    seldon_models: Mapping[str, _DeployedModel] = dict()
-    mlflow_models: Mapping[str, _DeployedModel] = dict()
+    seldon_models: Dict[str, _DeployedModel] = dict()
+    mlflow_models: Dict[str, _DeployedModel] = dict()
     while True:
         logging.info(f"Polling {mlflow_host}")
         try:

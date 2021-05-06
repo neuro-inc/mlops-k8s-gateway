@@ -40,7 +40,7 @@ spec:
               && mv ./kubectl /usr/local/bin/kubectl
               && kubectl version --client
               && echo "Installing the app"
-              && GIT_BRANCH=7343c03b07bc8cb6ca82cda925bf0e2c648ba0fe
+              && GIT_BRANCH=7699ddb 
               && pip install git+https://github.com/neuro-inc/mlops-k8s-mlflow2seldon.git@${GIT_BRANCH}
               && echo "Running the app"
               && mlflow2seldon

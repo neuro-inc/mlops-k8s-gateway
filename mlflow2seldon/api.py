@@ -45,7 +45,7 @@ class _DeployedModel:
         return f"{self.model_stage}/{self.model_name}"
 
 
-async def poll_mlflow(env):
+async def poll_mlflow(env: Mapping):
 
     # Settings of the source cluster, where MLflow is deployed:
     mlflow_neuro_token = env["M2S_MLFLOW_NEURO_TOKEN"]
@@ -53,7 +53,7 @@ async def poll_mlflow(env):
     mlflow_host = env["M2S_MLFLOW_HOST"]
     default_image = env["M2S_SELDON_NEURO_DEF_IMAGE"]
     deploy_image_tag = env["M2S_MLFLOW_DEPLOY_IMG_TAG"]
-    registry_secret_name = env.get["M2S_NEURO_REGISTRY_SECRET"]
+    registry_secret_name = env["M2S_NEURO_REGISTRY_SECRET"]
     seldon_deployment_ns = env["M2S_SELDON_DEPLOYMENT_NS"]
 
     client_factory = Factory()

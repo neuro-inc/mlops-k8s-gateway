@@ -2,14 +2,14 @@ from setuptools import find_packages, setup
 
 install_requires = (
     "PyYAML==5.3.1",
-    "neuro-sdk==21.2.19",
+    "neuro-sdk==21.4.23",
     "mlflow==1.14.0",
     "yarl==1.6.3",
 )
 
 setup(
     name="neuro-mlflow2seldon",
-    version="0.0.0",
+    version="0.0.1",
     url="https://github.com/neuro-inc/mlops-k8s-mlflow2seldon",
     packages=find_packages(),
     install_requires=install_requires,

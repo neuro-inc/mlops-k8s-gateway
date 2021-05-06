@@ -1,0 +1,22 @@
+# Allow SeldonDeployment read/write access for seldon-deploy-reader/writer roles
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: seldon-deploy-writer
+  namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
+rules:
+- apiGroups: ["machinelearning.seldon.io"]
+  resources: ["seldondeployments"]
+  verbs: ["watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: seldon-deploy-reader
+  namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
+rules:
+- apiGroups: ["machinelearning.seldon.io"]
+  resources: ["seldondeployments"]
+  verbs: ["get", "list"]
+---

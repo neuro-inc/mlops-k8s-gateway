@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.svc_image | default "python:3.7" }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- range $envK, $envV := .Values.serviceConfigs }}
+            - name: {{ $envK }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.serviceConfigName }}
+                  key: {{ $envK }}
+            {{- end }}
+          command:
+            - "/bin/bash"
+            - "-c"
+            - >-
+              echo "Installing kubectl"
+              && curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.20.1/bin/linux/amd64/kubectl
+              && chmod +x ./kubectl
+              && mv ./kubectl /usr/local/bin/kubectl
+              && kubectl version --client
+              && echo "Installing the app"
+              && GIT_BRANCH=master
+              && pip install git+https://github.com/neuro-inc/mlops-k8s-mlflow2seldon.git@${GIT_BRANCH}#egg=mlops-k8s-mlflow2seldon
+              && echo "Running the app"
+              && mlflow2seldon

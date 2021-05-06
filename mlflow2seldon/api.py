@@ -17,10 +17,6 @@ from mlflow.entities.model_registry import ModelVersion, RegisteredModel
 
 
 DELAY = 2
-# caution: it's hardcoded also into roles at ..k8s/seldon-roles.yaml
-DEFAULT_DEPLOYMENT_NAMESPACE = "seldon"
-# caution: it's hardcoded also into roles at ..k8s/seldon-roles.yaml
-DEFAULT_REG_SECRET_NAME = "neuro-registry"
 
 
 @dataclass
@@ -32,10 +28,17 @@ class _DeployedModel:
     model_stage: str
     model_version: str
     source_run_id: str
+    deployment_namespace: str
     need_redeploy: bool = False
 
     def is_same_version(self, other: _DeployedModel) -> bool:
-        return self.name == other.name and self.model_version == other.model_version
+        all_is_true = all(
+            (
+                self.name == other.name,
+                self.model_version == other.model_version,
+            )
+        )
+        return all_is_true
 
     @property
     def name(self) -> str:
@@ -48,27 +51,35 @@ async def poll_mlflow(env):
     mlflow_neuro_token = env["M2S_MLFLOW_NEURO_TOKEN"]
     mlflow_storage_root = env["M2S_MLFLOW_STORAGE_ROOT"]
     mlflow_host = env["M2S_MLFLOW_HOST"]
-    image_base_name = env["M2S_SELDON_NEURO_IMG_BASE_NAME"]
-    neuro_reg_secret = env.get("M2S_NEURO_REGISTRY_SECRET", DEFAULT_REG_SECRET_NAME)
+    default_image = env["M2S_SELDON_NEURO_DEF_IMAGE"]
+    deploy_image_tag = env["M2S_MLFLOW_DEPLOY_IMG_TAG"]
+    registry_secret_name = env.get["M2S_NEURO_REGISTRY_SECRET"]
+    seldon_deployment_ns = env["M2S_SELDON_DEPLOYMENT_NS"]
 
     client_factory = Factory()
-    await client_factory.login_with_token(source_neuro_token)
+    await client_factory.login_with_token(mlflow_neuro_token)
     neuro_client = await client_factory.get()
-    mlflow_client = MlflowClient(tracking_uri=source_mlflow_host)
+    mlflow_client = MlflowClient(tracking_uri=mlflow_host)
 
-    image_base_ref = neuro_client.parse.remote_image(image_base_name).as_docker_url()
-    image_base_ref = image_base_ref[: image_base_ref.index(":")]  # drop :latest tag
+    default_image_ref = neuro_client.parse.remote_image(default_image).as_docker_url()
 
     seldon_models: Mapping[str, _DeployedModel] = dict()
     mlflow_models: Mapping[str, _DeployedModel] = dict()
     while True:
-        logging.info(f"Polling {source_mlflow_host}")
+        logging.info(f"Polling {mlflow_host}")
         try:
-            # fetch current state of MLFlow
+            # iterate over all registered models ("Models" tab in MLflow WebUI)
             for model in mlflow_client.search_registered_models():
+                deploy_image = model.tags.get(deploy_image_tag)
+                if deploy_image:
+                    deploy_image_ref = neuro_client.parse.remote_image(
+                        deploy_image
+                    ).as_docker_url()
+                else:
+                    deploy_image_ref = default_image_ref
                 for model_version in model.latest_versions:
-                    if model_version.current_stage == "None":
-                        # model version is not in "staging" nor in "production" stages
+                    if model_version.current_stage not in ("Staging", "Production"):
+                        # we deploy only Staging and Production models
                         continue
                     # mlflow-config related path, e.g.
                     # ('/', 'usr', 'local', 'share', 'mlruns', '0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
@@ -81,12 +92,13 @@ async def poll_mlflow(env):
                         f"{mlflow_storage_root}/{'/'.join(mlflow_source_parts)}"
                     )
                     registered_model = _DeployedModel(
-                        image=f"{image_base_ref}/{model.name}:latest",  # TODO: give abbility to fetch image url from tags?
+                        image=deploy_image_ref,
                         model_storage_uri=storage_art_uri,
                         model_name=model.name,
                         model_stage=model_version.current_stage,
                         model_version=model_version.version,
                         source_run_id=model_version.run_id,
+                        deployment_namespace=seldon_deployment_ns,
                     )
                     deployed_model = seldon_models.get(registered_model.name)
                     if not deployed_model or not deployed_model.is_same_version(
@@ -101,12 +113,14 @@ async def poll_mlflow(env):
                     _deploy_model(
                         mlflow_models[model_name],
                         neuro_client,
-                        neuro_reg_secret,
+                        registry_secret_name,
                     )
 
             # removing outdated models
             for model_name in set(seldon_models.keys()) - set(mlflow_models.keys()):
-                _delete_seldon_deployment(model_name)
+                _delete_seldon_deployment(
+                    model_name, seldon_models[model_name].deployment_namespace
+                )
 
             # the state is sync
             seldon_models = mlflow_models.copy()
@@ -116,11 +130,13 @@ async def poll_mlflow(env):
             logging.warning(f"Unexpected exception (ignoring): {e}")
         finally:
             for model_name in seldon_models.keys():
-                _delete_seldon_deployment(model_name)
+                _delete_seldon_deployment(
+                    model_name, seldon_models[model_name].deployment_namespace
+                )
 
 
 async def _deploy_model(
-    model: _DeployedModel, neuro_client: Client, neuro_reg_secret: str
+    model: _DeployedModel, neuro_client: Client, registry_secret_name: str
 ) -> None:
     logging.info("")
     logging.info(f"Deploying model: {model}")
@@ -128,8 +144,9 @@ async def _deploy_model(
     neuro_token = await neuro_client.config.token()
     deployment_json = _create_seldon_deployment(
         name=model.model_name,
+        namespace=model.deployment_namespace,
         neuro_login_token=neuro_token,
-        registry_secret_name=neuro_reg_secret,
+        registry_secret_name=registry_secret_name,
         model_image_ref=model.image,
         model_storage_uri=str(model.model_storage_uri),
     )
@@ -143,6 +160,7 @@ async def _deploy_model(
 def _create_seldon_deployment(
     *,
     name: str,
+    namespace: str,
     neuro_login_token: str,
     registry_secret_name: str,
     model_image_ref: str,
@@ -156,8 +174,8 @@ def _create_seldon_deployment(
         "imagePullSecrets": [{"name": registry_secret_name}],
         "initContainers": [
             {
-                "name": "neuro-download",
-                "image": "neuromation/neuro-extras:20.12.16",
+                "name": "model-binary-download",
+                "image": "neuromation/neuro-extras:latest",
                 "imagePullPolicy": "Always",
                 "command": ["bash", "-c"],
                 "args": [
@@ -192,7 +210,7 @@ def _create_seldon_deployment(
     return {
         "apiVersion": "machinelearning.seldon.io/v1",
         "kind": "SeldonDeployment",
-        "metadata": {"name": name, "namespace": DEFAULT_DEPLOYMENT_NAMESPACE},
+        "metadata": {"name": name, "namespace": namespace},
         "spec": {
             "predictors": [
                 {
@@ -210,11 +228,11 @@ def _create_seldon_deployment(
     }
 
 
-def _delete_seldon_deployment(name: str) -> bool:
+def _delete_seldon_deployment(name: str, namespace: str) -> bool:
     logging.info(f"Deleting '{name}' model deployment.")
     try:
         subprocess.run(
-            f"kubectl -n {DEFAULT_DEPLOYMENT_NAMESPACE} delete SeldonDeployment {name}",
+            f"kubectl -n {namespace} delete SeldonDeployment {name}",
             shell=True,
             check=True,
         )
@@ -222,7 +240,7 @@ def _delete_seldon_deployment(name: str) -> bool:
         return True
     except subprocess.CalledProcessError as e:
         logging.error(
-            "Unable to delete SeldonDeployment '{name}' in '{DEFAULT_DEPLOYMENT_NAMESPACE}' namespace: {e}"
+            "Unable to delete SeldonDeployment '{name}' in '{namespace}' namespace: {e}"
         )
         return False
 

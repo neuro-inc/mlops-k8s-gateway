@@ -246,7 +246,7 @@ def _delete_seldon_deployment(name: str, namespace: str) -> bool:
 
 
 def main():
-    env = {k: v for k, v in env.items() if k.startswith("M2S_")}
+    env = {k: v for k, v in os.environ.items() if k.startswith("M2S_")}
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s %(levelname)s %(message)s",

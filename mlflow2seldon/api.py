@@ -109,7 +109,7 @@ async def poll_mlflow(env: Dict):
             # deploy models in Seldon
             for model_name in mlflow_models.keys():
                 if mlflow_models[model_name].need_redeploy:
-                    _deploy_model(
+                    await _deploy_model(
                         mlflow_models[model_name],
                         neuro_client,
                         registry_secret_name,

@@ -49,7 +49,6 @@ class _DeployedModel:
 async def poll_mlflow(env: Dict):
 
     # Settings of the source cluster, where MLflow is deployed:
-    mlflow_neuro_token = env["M2S_MLFLOW_NEURO_TOKEN"]
     mlflow_storage_root = env["M2S_MLFLOW_STORAGE_ROOT"]
     mlflow_host = env["M2S_MLFLOW_HOST"]
     default_image = env["M2S_SELDON_NEURO_DEF_IMAGE"]
@@ -58,7 +57,6 @@ async def poll_mlflow(env: Dict):
     seldon_deployment_ns = env["M2S_SELDON_DEPLOYMENT_NS"]
 
     client_factory = Factory()
-    await client_factory.login_with_token(mlflow_neuro_token)
     # Assumption: MLFlow is running in a platform job
     cluster = re.findall(CLUSTER_FROM_JOB_URL_MASK, mlflow_host)[0]
     neuro_client = await client_factory.get()

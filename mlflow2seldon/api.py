@@ -41,7 +41,7 @@ class _DeployedModel:
 
     @property
     def name(self) -> str:
-        return f"{self.model_name}-{self.model_stage}"
+        return f"{self.model_name}-{self.model_stage}".lower()
 
 
 async def poll_mlflow(env: Dict):

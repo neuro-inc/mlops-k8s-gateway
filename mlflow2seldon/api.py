@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import re
 import logging
 import tempfile
 import yaml
@@ -17,6 +18,7 @@ from mlflow.entities.model_registry import ModelVersion, RegisteredModel
 
 
 DELAY = 2
+CLUSTER_FROM_JOB_URL_MASK = "jobs.(.*).org.neu.ro"
 
 
 @dataclass
@@ -57,9 +59,12 @@ async def poll_mlflow(env: Dict):
 
     client_factory = Factory()
     await client_factory.login_with_token(mlflow_neuro_token)
+    # Assumption: MLFlow is running in a platform job
+    cluster = re.findall(CLUSTER_FROM_JOB_URL_MASK, mlflow_host)[0]
     neuro_client = await client_factory.get()
+    await neuro_client.config.switch_cluster(cluster)
     mlflow_client = MlflowClient(tracking_uri=mlflow_host)
-
+    # Assumption: Seldon deployment image is on a same cluster, where MLflow is running
     default_image_ref = neuro_client.parse.remote_image(default_image).as_docker_url()
 
     seldon_models: Dict[str, _DeployedModel] = dict()
@@ -80,6 +85,7 @@ async def poll_mlflow(env: Dict):
                     if model_version.current_stage not in ("Staging", "Production"):
                         # we deploy only Staging and Production models
                         continue
+                    # Assumption: artifact store in MLflow is platform storage
                     # mlflow-config related path, e.g.
                     # ('/', 'usr', 'local', 'share', 'mlruns', '0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
                     source_path_parts = Path(model_version.source).parts
@@ -104,7 +110,9 @@ async def poll_mlflow(env: Dict):
                         registered_model
                     ):
                         registered_model.need_redeploy = True
-                        mlflow_models[registered_model.name] = registered_model
+                    else:
+                        registered_model.need_redeploy = False
+                    mlflow_models[registered_model.name] = registered_model
 
             # deploy models in Seldon
             for model_name in mlflow_models.keys():
@@ -196,7 +204,7 @@ def _create_seldon_deployment(
         ],
         "containers": [
             {
-                "name": "model",
+                "name": name,
                 "image": model_image_ref,
                 "imagePullPolicy": "Always",
                 "volumeMounts": [{"mountPath": "/storage", "name": "neuro-storage"}],

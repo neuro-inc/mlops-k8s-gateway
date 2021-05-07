@@ -6,7 +6,7 @@ serviceConfigs:
   # these placeholders will be replaced with their values in a Makefile
   M2S_NEURO_REGISTRY_SECRET: neuro-registry-auth
   # token to login on the platform cluster, where the MLFlow server is running
-  NEURO_PASSED_CONFIG: $M2S_MLFLOW_NEURO_TOKEN
+  M2S_MLFLOW_NEURO_TOKEN: $M2S_MLFLOW_NEURO_TOKEN
   M2S_MLFLOW_HOST: $M2S_MLFLOW_HOST
   # Storage(!) path, where MLFlow stores run results and model binaries ( storage:$[[ flow.flow_id ]]/mlruns )
   M2S_MLFLOW_STORAGE_ROOT: $M2S_MLFLOW_STORAGE_ROOT

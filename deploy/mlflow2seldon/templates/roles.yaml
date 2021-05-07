@@ -3,20 +3,20 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: seldon-deploy-writer
+  name: seldon-deploy-manager
   namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
 rules:
 - apiGroups: ["machinelearning.seldon.io"]
   resources: ["seldondeployments"]
-  verbs: ["watch", "create", "update", "patch", "delete"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: seldon-deploy-reader
+  name: seldon-secrets-manager
   namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
 rules:
-- apiGroups: ["machinelearning.seldon.io"]
-  resources: ["seldondeployments"]
-  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---

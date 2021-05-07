@@ -164,8 +164,11 @@ async def _deploy_model(
     deployment = yaml.dump(deployment_json)
     path = Path(tempfile.mktemp())
     path.write_text(deployment)
-    subprocess.run(f"kubectl apply -f {path}", shell=True, check=True)
-    logging.info(f"Successfully deployed model: {model}")
+    try:
+        subprocess.run(f"kubectl apply -f {path}", shell=True, check=True)
+        logging.info(f"Successfully deployed model: {model}")
+    except subprocess.CalledProcessError as e:
+        logging.error(f"Unable to deploy '{model}': {e}")
 
 
 def _create_seldon_deployment(

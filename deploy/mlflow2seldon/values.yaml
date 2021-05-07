@@ -22,9 +22,9 @@ imagePullSecrets: []
 svc_image: python:3.7
 resources:
   limits:
-    cpu: 200m
+    cpu: 500m
     memory: 256Mi
   requests:
-    cpu: 100m
+    cpu: 250m
     memory: 128Mi
 

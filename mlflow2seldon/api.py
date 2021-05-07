@@ -41,7 +41,7 @@ class _DeployedModel:
 
     @property
     def name(self) -> str:
-        return f"{self.model_stage}/{self.model_name}"
+        return f"{self.model_name}-{self.model_stage}"
 
 
 async def poll_mlflow(env: Dict):
@@ -63,8 +63,8 @@ async def poll_mlflow(env: Dict):
     default_image_ref = neuro_client.parse.remote_image(default_image).as_docker_url()
 
     seldon_models: Dict[str, _DeployedModel] = dict()
-    mlflow_models: Dict[str, _DeployedModel] = dict()
     while True:
+        mlflow_models: Dict[str, _DeployedModel] = dict()
         logging.info(f"Polling {mlflow_host}")
         try:
             # iterate over all registered models ("Models" tab in MLflow WebUI)
@@ -117,21 +117,20 @@ async def poll_mlflow(env: Dict):
 
             # removing outdated models
             for model_name in set(seldon_models.keys()) - set(mlflow_models.keys()):
-                _delete_seldon_deployment(
-                    model_name, seldon_models[model_name].deployment_namespace
-                )
+                _delete_seldon_deployment(seldon_models[model_name])
 
             # the state is sync
             seldon_models = mlflow_models.copy()
+            logging.info(
+                f"Deployed models: {f'{n}:{m.model_version} ' for n, m in seldon_models.items()}"
+            )
             asyncio.sleep(DELAY)  # not to overload an API
 
         except BaseException as e:
             logging.warning(f"Unexpected exception (ignoring): {e}")
         finally:
-            for model_name in seldon_models.keys():
-                _delete_seldon_deployment(
-                    model_name, seldon_models[model_name].deployment_namespace
-                )
+            for model in seldon_models.values():
+                _delete_seldon_deployment(model)
 
 
 async def _deploy_model(
@@ -142,7 +141,7 @@ async def _deploy_model(
 
     neuro_token = await neuro_client.config.token()
     deployment_json = _create_seldon_deployment(
-        name=model.model_name,
+        name=model.name,
         namespace=model.deployment_namespace,
         neuro_login_token=neuro_token,
         registry_secret_name=registry_secret_name,
@@ -227,20 +226,18 @@ def _create_seldon_deployment(
     }
 
 
-def _delete_seldon_deployment(name: str, namespace: str) -> bool:
-    logging.info(f"Deleting '{name}' model deployment.")
+def _delete_seldon_deployment(model: _DeployedModel) -> bool:
+    logging.info(f"Deleting '{model}' model deployment.")
     try:
         subprocess.run(
-            f"kubectl -n {namespace} delete SeldonDeployment {name}",
+            f"kubectl -n {model.deployment_namespace} delete SeldonDeployment {model.name}",
             shell=True,
             check=True,
         )
-        logging.info(f"Successfully deleted '{name}' model deployment.")
+        logging.info(f"Successfully deleted '{model}' model deployment.")
         return True
     except subprocess.CalledProcessError as e:
-        logging.error(
-            "Unable to delete SeldonDeployment '{name}' in '{namespace}' namespace: {e}"
-        )
+        logging.error(f"Unable to delete SeldonDeployment '{model}': {e}")
         return False
 
 

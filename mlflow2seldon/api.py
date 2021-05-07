@@ -147,7 +147,6 @@ async def poll_mlflow(env: Dict):
 async def _deploy_model(
     model: _DeployedModel, neuro_client: Client, registry_secret_name: str
 ) -> None:
-    logging.info("")
     logging.info(f"Deploying model: {model}")
 
     neuro_token = await neuro_client.config.token()
@@ -155,6 +154,7 @@ async def _deploy_model(
         name=model.name,
         namespace=model.deployment_namespace,
         neuro_login_token=neuro_token,
+        neuro_cluster=neuro_client.config.cluster_name,
         registry_secret_name=registry_secret_name,
         model_image_ref=model.image,
         model_storage_uri=str(model.model_storage_uri),
@@ -174,6 +174,7 @@ def _create_seldon_deployment(
     name: str,
     namespace: str,
     neuro_login_token: str,
+    neuro_cluster: str,
     registry_secret_name: str,
     model_image_ref: str,
     model_storage_uri: str,
@@ -192,6 +193,7 @@ def _create_seldon_deployment(
                 "command": ["bash", "-c"],
                 "args": [
                     f"neuro config login-with-token $NEURO_LOGIN_TOKEN; "
+                    f"neuro config switch-cluster {neuro_cluster}; "
                     f"neuro --verbose cp -r -T {model_storage_uri} /storage"
                 ],
                 "volumeMounts": [

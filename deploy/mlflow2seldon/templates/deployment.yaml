@@ -40,7 +40,7 @@ spec:
               && mv ./kubectl /usr/local/bin/kubectl
               && kubectl version --client
               && echo "Installing the app"
-              && GIT_BRANCH=043c0d1059bf2369245d1eec71f6ed4a326b2f2f 
+              && GIT_BRANCH=3a9c72e 
               && pip install git+https://github.com/neuro-inc/mlops-k8s-mlflow2seldon.git@${GIT_BRANCH}
               && echo "Creating registry secret"
               && neuro config login-with-token $M2S_MLFLOW_NEURO_TOKEN

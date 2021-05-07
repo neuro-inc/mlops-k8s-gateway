@@ -260,7 +260,7 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
 def main():
     env = {k: v for k, v in os.environ.items() if k.startswith("M2S_")}
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )

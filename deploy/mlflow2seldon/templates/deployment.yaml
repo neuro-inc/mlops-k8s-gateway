@@ -44,6 +44,7 @@ spec:
               && pip install git+https://github.com/neuro-inc/mlops-k8s-mlflow2seldon.git@${GIT_BRANCH}
               && echo "Creating registry secret"
               && neuro config login-with-token $M2S_MLFLOW_NEURO_TOKEN
+              && neuro config switch-cluster $M2S_SRC_NEURO_CLUSTER
               && neuro-extras k8s generate-registry-secret --name {{ .Values.serviceConfigs.M2S_NEURO_REGISTRY_SECRET}} | kubectl -n {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS}} apply -f -
               && echo "Running the app"
               && mlflow2seldon

@@ -191,8 +191,8 @@ def _create_seldon_deployment(
                 "imagePullPolicy": "Always",
                 "command": ["bash", "-c"],
                 "args": [
-                    f"neuro config login-with-token $NEURO_LOGIN_TOKEN",
-                    f"neuro --verbose cp -r -T {model_storage_uri} /storage",
+                    f"neuro config login-with-token $NEURO_LOGIN_TOKEN; "
+                    f"neuro --verbose cp -r -T {model_storage_uri} /storage"
                 ],
                 "volumeMounts": [
                     {"mountPath": "/storage", "name": "neuro-storage"},

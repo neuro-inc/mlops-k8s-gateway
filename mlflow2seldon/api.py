@@ -122,9 +122,9 @@ async def poll_mlflow(env: Dict):
             # the state is sync
             seldon_models = mlflow_models.copy()
             logging.info(
-                f"Deployed models: {f'{n}:{m.model_version} ' for n, m in seldon_models.items()}"
+                f"Deployed models: {';'.join(f'{n}:{m.model_version}' for n, m in seldon_models.items())}"
             )
-            asyncio.sleep(DELAY)  # not to overload an API
+            await asyncio.sleep(DELAY)  # not to overload an API
 
         except BaseException as e:
             logging.warning(f"Unexpected exception (ignoring): {e}")

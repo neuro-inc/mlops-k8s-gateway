@@ -30,16 +30,12 @@ _helm_expand_vars:
 	export M2S_MLFLOW_STORAGE_ROOT=$(M2S_MLFLOW_STORAGE_ROOT); \
 	export M2S_SELDON_NEURO_DEF_IMAGE=$(M2S_SELDON_NEURO_DEF_IMAGE); \
 	export M2S_SRC_NEURO_CLUSTER=$(M2S_SRC_NEURO_CLUSTER); \
+	neuro config switch-cluster $${M2S_SRC_NEURO_CLUSTER}; \
 	cat deploy/$(HELM_CHART)/values.yaml | envsubst > temp_deploy/$(HELM_CHART)/values.yaml
 
 helm_deploy: _helm_fetch _helm_expand_vars
 	helm upgrade $(HELM_CHART) temp_deploy/$(HELM_CHART) \
-		--namespace $(SVC_DEPLOYMENT_NAMESPACE) --install --wait --timeout 600s
+		--create-namespace --namespace $(SVC_DEPLOYMENT_NAMESPACE) --install --wait --timeout 600s
 
-test-deploy:
-	neuro-extras --version || pip install -U neuro-extras
-	helm install deploy
-	$(neuro config show-token) \
-    --from-literal=mlflow_host=$MLFLOW_HOST\
-    --from-literal=mlflow_storage_root=$MLFLOW_STORAGE_ROOT\
-    --from-literal=seldon_neuro_img_base_name=$SELDON_IMAGE_BASE_NAME\
+helm_delete:
+	helm uninstall --namespace $(SVC_DEPLOYMENT_NAMESPACE) $(HELM_CHART) 

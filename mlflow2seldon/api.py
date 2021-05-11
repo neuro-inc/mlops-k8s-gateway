@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os
 import re
+import signal
 import logging
 import tempfile
 import yaml
@@ -134,11 +135,11 @@ async def poll_mlflow(env: Dict):
                 )
                 await asyncio.sleep(DELAY)  # not to overload an API
 
-            except BaseException as e:
-                logging.warning(f"Unexpected exception (ignoring): {e}")
             except KeyboardInterrupt:
                 logging.warning(f"Got keyboard interrupt, gracefully shutting down...")
                 break
+            except Exception as e:
+                logging.warning(f"Unexpected exception (ignoring): {e}")
     finally:
         for model in seldon_models.values():
             _delete_seldon_deployment(model)
@@ -257,6 +258,12 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
         return False
 
 
+def signal_handler(_signo, _stack_frame):
+    logging.warning(f"Got signal: '{_sno}', shutting down gracefully...")
+    # Otherwise 'finally' block will not be triggered
+    sys.exit(0)
+
+
 def main():
     env = {k: v for k, v in os.environ.items() if k.startswith("M2S_")}
     logging.basicConfig(
@@ -264,4 +271,5 @@ def main():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
+    signal.signal(signal.SIGTERM, sigterm_handler)
     asyncio.run(poll_mlflow(env))

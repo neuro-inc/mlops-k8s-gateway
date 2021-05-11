@@ -258,8 +258,8 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
         return False
 
 
-def signal_handler(_signo, _stack_frame):
-    logging.warning(f"Got signal: '{_sno}', shutting down gracefully...")
+def sigterm_handler(_signo, _stack_frame):
+    logging.warning(f"Got SIGTERM({_sno}) signal, shutting down gracefully...")
     # Otherwise 'finally' block will not be triggered
     sys.exit(0)
 

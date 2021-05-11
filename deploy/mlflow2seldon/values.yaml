@@ -21,5 +21,5 @@ serviceConfigs:
 
 replicaCount: 1
 imagePullSecrets: []
-svc_image: python:3.7
+svc_image: python:3.9
 resources: {}

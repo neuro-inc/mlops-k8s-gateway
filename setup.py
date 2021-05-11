@@ -14,6 +14,6 @@ setup(
     url="https://github.com/neuro-inc/mlops-k8s-mlflow2seldon",
     packages=find_packages(),
     install_requires=install_requires,
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     entry_points={"console_scripts": ["mlflow2seldon=mlflow2seldon.api:main"]},
 )

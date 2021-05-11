@@ -261,7 +261,8 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
 
 def sigterm_handler(_signo, _stack_frame):
     logging.warning(f"Got SIGTERM({_signo}) signal, shutting down gracefully...")
-    raise KeyboardInterrupt()
+    # Otherwise 'finally' block will not be triggered
+    sys.exit(0)
 
 
 def main():

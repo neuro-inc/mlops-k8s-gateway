@@ -249,7 +249,7 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
     try:
         cmd = (
             f"kubectl -n {model.deployment_namespace} delete "
-            "SeldonDeployment {model.name}",
+            f"SeldonDeployment {model.name}",
         )
         subprocess.run(cmd, shell=True, check=True)
         logging.info(f"Successfully deleted '{model}' model deployment.")

@@ -1,5 +1,6 @@
 from __future__ import annotations
 import os
+import sys
 import re
 import signal
 import logging
@@ -7,15 +8,13 @@ import tempfile
 import yaml
 import subprocess
 import asyncio
-import urllib.request
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Any, Dict, Dict
+from typing import Any, Dict
 
 from yarl import URL
-from neuro_sdk import Factory, Client, Storage
+from neuro_sdk import Factory, Client
 from mlflow.tracking.client import MlflowClient
-from mlflow.entities.model_registry import ModelVersion, RegisteredModel
 
 
 DELAY = 2
@@ -89,7 +88,8 @@ async def poll_mlflow(env: Dict):
                         # mlflow-config related path, e.g.
                         # ('/', 'usr', 'local', 'share', 'mlruns', '0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
                         source_path_parts = Path(model_version.source).parts
-                        # leave pure mlflow subpath, e.g.: ('0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
+                        # leave pure mlflow subpath, e.g.:
+                        # ('0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
                         mlflow_source_parts = source_path_parts[
                             source_path_parts.index(model_version.run_id) - 1 :
                         ]
@@ -130,13 +130,14 @@ async def poll_mlflow(env: Dict):
 
                 # the state is sync
                 seldon_models = mlflow_models.copy()
-                logging.info(
-                    f"Deployed models: {';'.join(f'{n}:{m.model_version}' for n, m in seldon_models.items())}"
-                )
+                deployed_models = [
+                    f"{n}:{m.model_version}" for n, m in seldon_models.items()
+                ]
+                logging.info(f"Deployed models: {';'.join(deployed_models)}")
                 await asyncio.sleep(DELAY)  # not to overload an API
 
             except KeyboardInterrupt:
-                logging.warning(f"Got keyboard interrupt, gracefully shutting down...")
+                logging.warning("Got keyboard interrupt, gracefully shutting down...")
                 break
             except Exception as e:
                 logging.warning(f"Unexpected exception (ignoring): {e}")
@@ -246,11 +247,11 @@ def _create_seldon_deployment(
 def _delete_seldon_deployment(model: _DeployedModel) -> bool:
     logging.info(f"Deleting '{model}' model deployment.")
     try:
-        subprocess.run(
-            f"kubectl -n {model.deployment_namespace} delete SeldonDeployment {model.name}",
-            shell=True,
-            check=True,
+        cmd = (
+            f"kubectl -n {model.deployment_namespace} delete "
+            "SeldonDeployment {model.name}",
         )
+        subprocess.run(cmd, shell=True, check=True)
         logging.info(f"Successfully deleted '{model}' model deployment.")
         return True
     except subprocess.CalledProcessError as e:

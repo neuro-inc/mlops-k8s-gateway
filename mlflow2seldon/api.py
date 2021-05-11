@@ -15,6 +15,7 @@ from typing import Any, Dict
 from yarl import URL
 from neuro_sdk import Factory, Client
 from mlflow.tracking.client import MlflowClient
+from mlflow.exceptions import MlflowException
 
 
 DELAY = 2
@@ -139,6 +140,17 @@ async def poll_mlflow(env: Dict):
             except KeyboardInterrupt:
                 logging.warning("Got keyboard interrupt, gracefully shutting down...")
                 break
+            except MlflowException as e:
+                if "Page Not Found" in e.message:
+                    logging.warning(
+                        f"Unable to connect to the MLFlow server. Is it running as a platform job?"
+                    )
+                elif "Sign In" in e.message:
+                    logging.warning(
+                        f"Unable to connect to the MLFlow server - auth is required. SSO is disabled?"
+                    )
+                else:
+                    logging.warning(f"MLFlow server error occured:\n{e}")
             except Exception as e:
                 logging.warning(f"Unexpected exception (ignoring): {e}")
     finally:

@@ -26,7 +26,7 @@ Given that, all the interaction with the service is done implicitly via the MLFl
 - `make helm_deploy` - will ask one several questions (e.g. what is the MLFlow URL, which Neu.ro cluster should be considered, etc.). Alternatively, one might also set the following env vars:
     - `M2S_MLFLOW_HOST` - MLFlow server host name (example: _https://mlflow--user.jobs.cluster.org.neu.ro_)/;
     - `M2S_MLFLOW_STORAGE_ROOT` - artifact root path in the platform storage (_storage:myproject/mlruns_);
-    - `M2S_SELDON_NEURO_DEF_IMAGE` - docker image, stored in a platform registry, which will be used to deploy the model (_image:myproject/seldon:v1_);
+    - `M2S_SELDON_NEURO_DEF_IMAGE` - docker image, stored in a platform registry, which will be used to deploy the model (_image:myproject/seldon:v1_). Alternatively, one might configure service to use another platform image for deployment by tagging the respective registerred model (not a model version (!) ) with the tag named after `M2S_MLFLOW_DEPLOY_IMG_TAG` chart parameter value (for instance, with a tag named "_deployment-image_" and the value "_image:myproject/seldon:v2_);
     - `M2S_SRC_NEURO_CLUSTER` - Neu.ro cluster, where deployment image, MLflow artifacts and MLFlow itself are hosted (_demo_cluster_);
 - Direct use of the helm chart is possible, however less comfortable - all requested by makefile info should be passed as chart values.
 

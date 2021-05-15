@@ -1,25 +1,26 @@
 from __future__ import annotations
+
+import asyncio
+import logging
 import os
-import sys
 import re
 import signal
-import logging
-import tempfile
-import yaml
 import subprocess
-import asyncio
-from pathlib import Path
+import sys
+import tempfile
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict
 
-from yarl import URL
-from neuro_sdk import Factory, Client
-from mlflow.tracking.client import MlflowClient
+import yaml
 from mlflow.exceptions import MlflowException
+from mlflow.tracking.client import MlflowClient
+from neuro_sdk import Client, Factory
+from yarl import URL
 
 
 DELAY = 2
-CLUSTER_FROM_JOB_URL_MASK = "jobs.(.*).org.neu.ro"
+CLUSTER_FROM_JOB_URL_PATTERN = "jobs.(.*).org.neu.ro"
 
 
 @dataclass
@@ -47,7 +48,7 @@ class _DeployedModel:
         return f"{self.model_name}-{self.model_stage}".lower()
 
 
-async def poll_mlflow(env: Dict):
+async def poll_mlflow(env: dict):
 
     # Settings of the source cluster, where MLflow is deployed:
     mlflow_storage_root = env["M2S_MLFLOW_STORAGE_ROOT"]
@@ -59,7 +60,7 @@ async def poll_mlflow(env: Dict):
 
     client_factory = Factory()
     # Assumption: MLFlow is running in a platform job
-    cluster = re.findall(CLUSTER_FROM_JOB_URL_MASK, mlflow_host)[0]
+    cluster = re.findall(CLUSTER_FROM_JOB_URL_PATTERN, mlflow_host)[0]
     neuro_client = await client_factory.get()
     await neuro_client.config.switch_cluster(cluster)
     mlflow_client = MlflowClient(tracking_uri=mlflow_host)
@@ -87,13 +88,13 @@ async def poll_mlflow(env: Dict):
                             continue
                         # Assumption: artifact store in MLflow is platform storage
                         # mlflow-config related path, e.g.
-                        # ('/', 'usr', 'local', 'share', 'mlruns', '0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
+                        # ('/', 'usr', 'local', 'share', 'mlruns', '0',
+                        # 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
                         source_path_parts = Path(model_version.source).parts
                         # leave pure mlflow subpath, e.g.:
-                        # ('0', 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
-                        mlflow_source_parts = source_path_parts[
-                            source_path_parts.index(model_version.run_id) - 1 :
-                        ]
+                        # (0, ae72265a0a17473f993f78ab239c2f2f, artifacts, model)
+                        mlruns_idx = source_path_parts.index(model_version.run_id) - 1
+                        mlflow_source_parts = source_path_parts[mlruns_idx:]
                         storage_art_uri = URL(
                             f"{mlflow_storage_root}/{'/'.join(mlflow_source_parts)}"
                         )
@@ -143,11 +144,13 @@ async def poll_mlflow(env: Dict):
             except MlflowException as e:
                 if "Page Not Found" in e.message:
                     logging.warning(
-                        f"Unable to connect to the MLFlow server. Is it running as a platform job?"
+                        "Unable to connect to the MLFlow server. "
+                        "Is it running as a platform job?"
                     )
                 elif "Sign In" in e.message:
                     logging.warning(
-                        f"Unable to connect to the MLFlow server - auth is required. SSO is disabled?"
+                        "Unable to connect to the MLFlow server - auth is required. "
+                        "SSO is disabled?"
                     )
                 else:
                     logging.warning(f"MLFlow server error occured:\n{e}")

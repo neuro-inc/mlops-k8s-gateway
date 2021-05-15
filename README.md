@@ -12,12 +12,12 @@ If the stage assignment gets removed/updated - the corresponding SeldonDeploymen
 Given that, all the interaction with the service is done implicitly via the MLFlow server state. There is no need to execute particular commands/workloads against this service directly.
 
 ## Prerequisites and usage assumptions
-- MLFlow 
+- MLFlow
     - is up and running as a [platform job](https://github.com/neuro-actions/mlflow)
     - disabled platform SSO;
     - artifact store as a platform storage, mounted as local path;
     - mlflow server version is at least `1.11.0`;
-- Seldon 
+- Seldon
     - SeldonDeployment container image ([model wrapper](https://docs.seldon.io/projects/seldon-core/en/stable/python/python_wrapping_docker.html)) should be stored in the platform registry, on the same cluster where MLFlow is runnnig;
     - `kubectl` tool at the time of this service deployment should be authenticated to communicate with a Kubernetes cluster, where Seldon is deployed;
     - seldon-core-operator version is at least `1.5.0`;
@@ -30,7 +30,7 @@ Given that, all the interaction with the service is done implicitly via the MLFl
     - `M2S_SRC_NEURO_CLUSTER` - Neu.ro cluster, where deployment image, MLflow artifacts and MLFlow itself are hosted (_demo_cluster_);
 - Direct use of the helm chart is possible, however less comfortable - all requested by makefile info should be passed as chart values.
 
-## Cleanup 
+## Cleanup
 - `make helm_delete` - will delete:
     - all created by this helm chart resources, required for this service and the service itself;
     - Kubernetes namespace (and as a result all the resources within it), where SeldonDeployments were creating (M2S_SELDON_DEPLOYMENT_NS);

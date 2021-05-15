@@ -11,9 +11,10 @@ M2S_SRC_NEURO_CLUSTER ?= $(shell read -p "Neuro cluster where MLFlow is running:
 
 setup:
 	pip install -r requirements/syntax.txt
+	pre-commit install
 
 lint: format
-	mypy platform_integrations setup.py
+	mypy mlflow2seldon setup.py
 
 format:
 	pre-commit run --all-files --show-diff-on-failure
@@ -31,11 +32,14 @@ _helm_expand_vars:
 	export M2S_SELDON_NEURO_DEF_IMAGE=$(M2S_SELDON_NEURO_DEF_IMAGE); \
 	export M2S_SRC_NEURO_CLUSTER=$(M2S_SRC_NEURO_CLUSTER); \
 	neuro config switch-cluster $${M2S_SRC_NEURO_CLUSTER}; \
-	cat deploy/$(HELM_CHART)/values.yaml | envsubst > temp_deploy/$(HELM_CHART)/values.yaml
+	cat deploy/$(HELM_CHART)/values-make.yaml | envsubst > temp_deploy/$(HELM_CHART)/values-make.yaml
+	cp deploy/$(HELM_CHART)/values.yaml > temp_deploy/$(HELM_CHART)/values.yaml
+	helm lint temp_deploy/$(HELM_CHART)
 
 helm_deploy: _helm_fetch _helm_expand_vars
-	helm upgrade $(HELM_CHART) temp_deploy/$(HELM_CHART) \
+	helm upgrade $(HELM_CHART) \
+		temp_deploy/$(HELM_CHART) -f temp_deploy/$(HELM_CHART)/values.yaml -f temp_deploy/$(HELM_CHART)/values-make.yaml \
 		--create-namespace --namespace $(SVC_DEPLOYMENT_NAMESPACE) --install --wait --timeout 600s
 
 helm_delete:
-	helm uninstall --namespace $(SVC_DEPLOYMENT_NAMESPACE) $(HELM_CHART) 
+	helm uninstall --namespace $(SVC_DEPLOYMENT_NAMESPACE) $(HELM_CHART)

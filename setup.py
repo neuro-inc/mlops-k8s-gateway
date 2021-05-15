@@ -1,11 +1,13 @@
 from setuptools import find_packages, setup
 
+
 install_requires = (
-    "PyYAML==5.3.1",
-    "neuro-sdk==21.4.23",
-    "neuro-extras==21.3.19",
-    "mlflow==1.14.0",
-    "yarl==1.6.3",
+    "PyYAML >= 5.3.1",
+    "neuro-sdk >= 21.4.23",
+    "neuro-extras >= 21.3.19",
+    "mlflow >= 1.14.0",
+    "yarl >= 1.6.3",
+    "click >= 7.1.2, < 8.0.0",
 )
 
 setup(

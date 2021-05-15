@@ -1,0 +1,152 @@
+name: CI
+
+on:
+  release:
+    types: [published]
+
+jobs:
+
+  info:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      name: ${{ steps.version.outputs.name }}
+    steps:
+    - name: Checkout commit
+      uses: actions/checkout@v2
+    - name: Setup Python 3.9
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Cache PyPI
+      uses: actions/cache@v2.1.5
+      with:
+        key: pip-lint-${{ hashFiles('requirements/*.txt') }}
+        path: ~/.cache/pip
+        restore-keys: |
+          pip-lint-
+    - name: Install dependencies
+      run: |
+        python -m pip install pip
+        make setup
+    - name: Save the package version
+      id: version
+      run: |
+        echo "::set-output name=version::$(python setup.py --version)"
+        echo "::set-output name=name::$(python setup.py --name)"
+    - name: Show version
+      run: |
+        echo ${{ steps.version.outputs.name }}==${{ steps.version.outputs.version }}
+
+  devpi_deploy:
+    name: Release package
+    runs-on: ubuntu-latest
+    needs: [info]
+    if: github.event_name == 'release'
+    steps:
+    - name: Checkout commit
+      uses: actions/checkout@v2
+    - name: Sanity check for tag and version
+      run: |
+        export VERSION=${{ needs.info.outputs.version }}
+        if [ "${{ github.ref }}" != "refs/tags/v$VERSION" ]
+        then
+          echo "Git tag '${{ github.ref }}' differs from hard-coded package version 'v$VERSION'"
+          exit 1
+        else
+          echo "OK, git tag matches hard-coded package version: 'v$VERSION'"
+        fi
+    - name: Install python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        python -m pip install twine wheel
+        make setup
+    - name: Make dists
+      run: |
+        python setup.py sdist bdist_wheel
+    - name: PyPI upload
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        twine upload dist/*
+
+  dockerhub_deploy:
+    name: Release image if needed
+    runs-on: ubuntu-latest
+    needs: [info, devpi_deploy]
+    if: github.event_name == 'release'
+    env:
+      DOCKER_SERVER: docker.io
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    steps:
+    - name: Checkout commit
+      uses: actions/checkout@v2
+    - name: Install python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.9'
+    - name: Install dependencies
+      run: |
+        python -m pip install pip
+        make setup
+    - name: Wait until package becomes available on PyPI
+      timeout-minutes: 5
+      run: |
+        PYPIVERSION=${{ needs.info.outputs.version }}
+        PYPINAME=${{ needs.info.outputs.name }}
+        PYPIPACKAGE=$PYPINAME==$PYPIVERSION
+        until python -m pip install $PYPIPACKAGE
+        do
+            echo "Waiting for the pypi package $PYPIPACKAGE ..."
+            sleep 1
+        done
+    - name: Build release image
+      run: |
+        export PACKAGE="${{ needs.info.outputs.name }}==${{ needs.info.outputs.version }}"
+        docker build -t neuromation/${{ needs.info.outputs.name }}:latest --build-arg PACKAGE=$PACKAGE .
+    - name: Push release release image
+      id: push
+      run: |
+        export IMAGE=neuromation/${{ needs.info.outputs.name }}
+        export TAG=${{ needs.info.outputs.version }}
+
+        echo "::set-output name=image::$IMAGE"
+        echo "::set-output name=tag::$TAG"
+
+        docker login $DOCKER_SERVER --username $DOCKER_USERNAME --password $DOCKER_PASSWORD
+        docker tag $IMAGE:latest $IMAGE:$TAG
+        docker push $IMAGE:$TAG
+        # Push latest if it's not an alpha release:
+        #   not alpha: TAG="20.9.29"
+        #       alpha: TAG="20.9.29a1"
+        if [[ ! "$TAG" =~ ^.*a[0-9]*$ ]]; then
+          docker $IMAGE:latest
+        fi
+    - name: Wait until image becomes available on DockerHub
+      timeout-minutes: 10
+      run: |
+        export IMAGE=${{ steps.push.outputs.image }}
+        export TAG=${{ steps.push.outputs.tag }}
+
+        docker_tag_exists () {
+            CT="Content-Type: application/json"
+            U=$DOCKER_USERNAME
+            P=$DOCKER_PASSWORD
+            URL=https://hub.docker.com
+            TOKEN=$(curl -s -H "$CT" -X POST -d '{"username": "'$U'", "password": "'$P'"}' $URL/v2/users/login/ | jq -r .token)
+            curl --silent -f --head -lL $URL/v2/repositories/$1/tags/$2/ > /dev/null
+        }
+
+        until docker_tag_exists $IMAGE $TAG
+        do
+            echo "Waiting for the dockerhub image $IMAGE:$TAG ..."
+            sleep 1
+        done

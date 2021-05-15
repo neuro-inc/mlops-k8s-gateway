@@ -48,7 +48,7 @@ class _DeployedModel:
         return f"{self.model_name}-{self.model_stage}".lower()
 
 
-async def poll_mlflow(env: dict):
+async def poll_mlflow(env: Dict[str, str]) -> None:
 
     # Settings of the source cluster, where MLflow is deployed:
     mlflow_storage_root = env["M2S_MLFLOW_STORAGE_ROOT"]
@@ -274,13 +274,13 @@ def _delete_seldon_deployment(model: _DeployedModel) -> bool:
         return False
 
 
-def sigterm_handler(_signo, _stack_frame):
+def sigterm_handler(_signo, _stack_frame) -> None:  # type: ignore
     logging.warning(f"Got SIGTERM({_signo}) signal, shutting down gracefully...")
     # Otherwise 'finally' block will not be triggered
     sys.exit(0)
 
 
-def main():
+def main() -> None:
     env = {k: v for k, v in os.environ.items() if k.startswith("M2S_")}
     logging.basicConfig(
         level=logging.INFO,

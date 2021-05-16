@@ -5,6 +5,7 @@ RUN curl --output /usr/local/bin/kubectl -L \
     chmod +x /usr/local/bin/kubectl;
 
 # package version is to be overloaded with exact version
-ARG PACKAGE=neuro-mlflow2seldon
+WORKDIR /app
+COPY . /app
 
-RUN pip install --user $PACKAGE
+RUN pip install -e .

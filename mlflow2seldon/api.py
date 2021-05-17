@@ -68,97 +68,93 @@ async def poll_mlflow(env: Dict[str, str]) -> None:
     default_image_ref = neuro_client.parse.remote_image(default_image).as_docker_url()
 
     seldon_models: Dict[str, _DeployedModel] = dict()
-    try:
-        while True:
-            mlflow_models: Dict[str, _DeployedModel] = dict()
-            logging.info(f"Polling {mlflow_host}")
-            try:
-                # iterate over all registered models ("Models" tab in MLflow WebUI)
-                for model in mlflow_client.search_registered_models():
-                    deploy_image = model.tags.get(deploy_image_tag)
-                    if deploy_image:
-                        deploy_image_ref = neuro_client.parse.remote_image(
-                            deploy_image
-                        ).as_docker_url()
-                    else:
-                        deploy_image_ref = default_image_ref
-                    for model_version in model.latest_versions:
-                        if model_version.current_stage not in ("Staging", "Production"):
-                            # we deploy only Staging and Production models
-                            continue
-                        # Assumption: artifact store in MLflow is platform storage
-                        # mlflow-config related path, e.g.
-                        # ('/', 'usr', 'local', 'share', 'mlruns', '0',
-                        # 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
-                        source_path_parts = Path(model_version.source).parts
-                        # leave pure mlflow subpath, e.g.:
-                        # (0, ae72265a0a17473f993f78ab239c2f2f, artifacts, model)
-                        mlruns_idx = source_path_parts.index(model_version.run_id) - 1
-                        mlflow_source_parts = source_path_parts[mlruns_idx:]
-                        storage_art_uri = URL(
-                            f"{mlflow_storage_root}/{'/'.join(mlflow_source_parts)}"
-                        )
-                        registered_model = _DeployedModel(
-                            image=deploy_image_ref,
-                            model_storage_uri=storage_art_uri,
-                            model_name=model.name,
-                            model_stage=model_version.current_stage,
-                            model_version=model_version.version,
-                            source_run_id=model_version.run_id,
-                            deployment_namespace=seldon_deployment_ns,
-                        )
-                        deployed_model = seldon_models.get(registered_model.name)
-                        if not deployed_model or not deployed_model.is_same_version(
-                            registered_model
-                        ):
-                            registered_model.need_redeploy = True
-                        else:
-                            registered_model.need_redeploy = False
-                        mlflow_models[registered_model.name] = registered_model
-
-                # deploy models in Seldon
-                for model_name in mlflow_models.keys():
-                    if mlflow_models[model_name].need_redeploy:
-                        await _deploy_model(
-                            mlflow_models[model_name],
-                            neuro_client,
-                            registry_secret_name,
-                        )
-                        mlflow_models[model_name].need_redeploy = False
-
-                # removing outdated models
-                for model_name in set(seldon_models.keys()) - set(mlflow_models.keys()):
-                    _delete_seldon_deployment(seldon_models[model_name])
-
-                # the state is sync
-                seldon_models = mlflow_models.copy()
-                deployed_models = [
-                    f"{n}:{m.model_version}" for n, m in seldon_models.items()
-                ]
-                logging.info(f"Deployed models: {';'.join(deployed_models)}")
-                await asyncio.sleep(DELAY)  # not to overload an API
-
-            except KeyboardInterrupt:
-                logging.warning("Got keyboard interrupt, gracefully shutting down...")
-                break
-            except MlflowException as e:
-                if "Page Not Found" in e.message:
-                    logging.warning(
-                        "Unable to connect to the MLFlow server. "
-                        "Is it running as a platform job?"
-                    )
-                elif "Sign In" in e.message:
-                    logging.warning(
-                        "Unable to connect to the MLFlow server - auth is required. "
-                        "SSO is disabled?"
-                    )
+    while True:
+        mlflow_models: Dict[str, _DeployedModel] = dict()
+        logging.info(f"Polling {mlflow_host}")
+        try:
+            # iterate over all registered models ("Models" tab in MLflow WebUI)
+            for model in mlflow_client.search_registered_models():
+                deploy_image = model.tags.get(deploy_image_tag)
+                if deploy_image:
+                    deploy_image_ref = neuro_client.parse.remote_image(
+                        deploy_image
+                    ).as_docker_url()
                 else:
-                    logging.warning(f"MLFlow server error occured:\n{e}")
-            except Exception as e:
-                logging.warning(f"Unexpected exception (ignoring): {e}")
-    finally:
-        for model in seldon_models.values():
-            _delete_seldon_deployment(model)
+                    deploy_image_ref = default_image_ref
+                for model_version in model.latest_versions:
+                    if model_version.current_stage not in ("Staging", "Production"):
+                        # we deploy only Staging and Production models
+                        continue
+                    # Assumption: artifact store in MLflow is platform storage
+                    # mlflow-config related path, e.g.
+                    # ('/', 'usr', 'local', 'share', 'mlruns', '0',
+                    # 'ae72265a0a17473f993f78ab239c2f2f', 'artifacts', 'model')
+                    source_path_parts = Path(model_version.source).parts
+                    # leave pure mlflow subpath, e.g.:
+                    # (0, ae72265a0a17473f993f78ab239c2f2f, artifacts, model)
+                    mlruns_idx = source_path_parts.index(model_version.run_id) - 1
+                    mlflow_source_parts = source_path_parts[mlruns_idx:]
+                    storage_art_uri = URL(
+                        f"{mlflow_storage_root}/{'/'.join(mlflow_source_parts)}"
+                    )
+                    registered_model = _DeployedModel(
+                        image=deploy_image_ref,
+                        model_storage_uri=storage_art_uri,
+                        model_name=model.name,
+                        model_stage=model_version.current_stage,
+                        model_version=model_version.version,
+                        source_run_id=model_version.run_id,
+                        deployment_namespace=seldon_deployment_ns,
+                    )
+                    deployed_model = seldon_models.get(registered_model.name)
+                    if not deployed_model or not deployed_model.is_same_version(
+                        registered_model
+                    ):
+                        registered_model.need_redeploy = True
+                    else:
+                        registered_model.need_redeploy = False
+                    mlflow_models[registered_model.name] = registered_model
+
+            # deploy models in Seldon
+            for model_name in mlflow_models:
+                if mlflow_models[model_name].need_redeploy:
+                    await _deploy_model(
+                        mlflow_models[model_name],
+                        neuro_client,
+                        registry_secret_name,
+                    )
+                    mlflow_models[model_name].need_redeploy = False
+
+            # removing outdated models
+            for model_name in set(seldon_models) - set(mlflow_models):
+                _delete_seldon_deployment(seldon_models[model_name])
+
+            # the state is sync
+            seldon_models = mlflow_models.copy()
+            deployed_models = [
+                f"{n}:{m.model_version}" for n, m in seldon_models.items()
+            ]
+            logging.info(f"Deployed models: {';'.join(deployed_models)}")
+            await asyncio.sleep(DELAY)  # not to overload an API
+
+        except KeyboardInterrupt:
+            logging.warning("Got keyboard interrupt, gracefully shutting down...")
+            break
+        except MlflowException as e:
+            if "Page Not Found" in e.message:
+                logging.warning(
+                    "Unable to connect to the MLFlow server. "
+                    "Is it running as a platform job?"
+                )
+            elif "Sign In" in e.message:
+                logging.warning(
+                    "Unable to connect to the MLFlow server - auth is required. "
+                    "SSO is disabled?"
+                )
+            else:
+                logging.warning(f"MLFlow server error occured:\n{e}")
+        except Exception as e:
+            logging.warning(f"Unexpected exception (ignoring): {e}")
 
 
 async def _deploy_model(

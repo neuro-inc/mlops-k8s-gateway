@@ -1,26 +1,21 @@
 from setuptools import find_packages, setup
 
+
 install_requires = (
-    "aiohttp==3.7.2",
-    "PyYAML==5.3.1",
-    # "neuro_auth_client==19.10.5",
-    # "platform_config_client==20.11.26",
-    # "neuromation==20.12.7",
-    # "trafaret==2.1.0",
-    # "platform-logging==0.3",
-    # "aiohttp-cors==0.7.0",
-    # "aiobotocore==1.1.2",
-    # "urllib3>=1.20,<1.26",  # botocore requirements
+    "PyYAML >= 5.3.1",
+    "neuro-sdk >= 21.4.23",
+    "neuro-extras >= 21.3.19",
+    "mlflow >= 1.14.0",
+    "yarl >= 1.6.3",
+    "click >= 7.1.2, < 8.0.0",
 )
 
 setup(
-    name="mlops-kube-gateway",
-    version="0.0.0",
-    url="https://github.com/neuro-inc/mlops-kube-gateway",
+    name="neuro-mlflow2seldon",
+    version="0.0.1",
+    url="https://github.com/neuro-inc/mlops-k8s-mlflow2seldon",
     packages=find_packages(),
     install_requires=install_requires,
-    python_requires=">=3.7",
-    entry_points={
-        "console_scripts": ["mlops-kube-gateway=mlops_kube_gateway.api:main"]
-    },
+    python_requires=">=3.9",
+    entry_points={"console_scripts": ["mlflow2seldon=mlflow2seldon.api:main"]},
 )

@@ -1,0 +1,5 @@
+# NS, where SeldonDeployments will be created
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}

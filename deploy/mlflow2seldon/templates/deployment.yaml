@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-deployment
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.serviceAccountName }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.svc_image }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          env:
+            {{- range $envK, $envV := .Values.serviceConfigs }}
+            - name: {{ $envK }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.serviceConfigName }}
+                  key: {{ $envK }}
+            {{- end }}
+          command:
+            - "/bin/bash"
+            - "-c"
+            - >-
+              echo "Creating registry secret"
+              && neuro config login-with-token $M2S_MLFLOW_NEURO_TOKEN
+              && neuro config switch-cluster $M2S_SRC_NEURO_CLUSTER
+              && neuro-extras k8s generate-registry-secret --name {{ .Values.serviceConfigs.M2S_NEURO_REGISTRY_SECRET}} | kubectl -n {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS}} apply -f -
+              && echo "Running the app"
+              && exec mlflow2seldon

@@ -1,0 +1,24 @@
+# mlflow2seldon config
+serviceAccountName: mlflow2seldon-sa
+
+serviceConfigName: mlflow2seldon-config
+serviceConfigs:
+  # these placeholders will be replaced with their values in a Makefile
+  M2S_NEURO_REGISTRY_SECRET: neuro-registry-auth
+  # token to login on the platform cluster, where the MLFlow server is running
+  M2S_MLFLOW_NEURO_TOKEN: {{ required ".Values.M2S_MLFLOW_NEURO_TOKEN is required!" .Values.M2S_MLFLOW_NEURO_TOKEN }}
+  M2S_MLFLOW_HOST: {{ required ".Values.M2S_MLFLOW_HOST is required!" .Values.M2S_MLFLOW_HOST }}
+  # Cluster, where model binaries and docker image is stored
+  M2S_SRC_NEURO_CLUSTER: {{ required ".Values.M2S_SRC_NEURO_CLUSTER is required!" .Values.M2S_SRC_NEURO_CLUSTER }}
+  # Storage(!) path, where MLFlow stores run results and model binaries ( storage:$[[ flow.flow_id ]]/mlruns )
+  M2S_MLFLOW_STORAGE_ROOT: {{ required ".Values.M2S_MLFLOW_STORAGE_ROOT is required!" .Values.M2S_MLFLOW_STORAGE_ROOT }}
+  # MLFlow Registered model tag name, refering to the deployment image
+  # Assumption: deployment image is located within the same cluster, where MLFlow server is running
+  M2S_MLFLOW_DEPLOY_IMG_TAG: deployment-image
+  M2S_SELDON_NEURO_DEF_IMAGE:
+  # namespace, where to deploy SeldonDeploymentss
+  M2S_SELDON_DEPLOYMENT_NS: seldon
+
+imagePullSecrets: []
+svc_image: neuromation/neuro-mlflow2seldon:latest
+resources: {}

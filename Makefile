@@ -33,8 +33,8 @@ _helm_expand_vars:
 	export M2S_SRC_NEURO_CLUSTER=$(M2S_SRC_NEURO_CLUSTER); \
 	neuro config switch-cluster $${M2S_SRC_NEURO_CLUSTER}; \
 	cat deploy/$(HELM_CHART)/values-make.yaml | envsubst > temp_deploy/$(HELM_CHART)/values-make.yaml
-	cp deploy/$(HELM_CHART)/values.yaml > temp_deploy/$(HELM_CHART)/values.yaml
-	helm lint temp_deploy/$(HELM_CHART)
+	cp deploy/$(HELM_CHART)/values.yaml temp_deploy/$(HELM_CHART)/values.yaml
+	helm lint temp_deploy/$(HELM_CHART) -f temp_deploy/$(HELM_CHART)/values.yaml -f temp_deploy/$(HELM_CHART)/values-make.yaml
 
 helm_deploy: _helm_fetch _helm_expand_vars
 	helm upgrade $(HELM_CHART) \

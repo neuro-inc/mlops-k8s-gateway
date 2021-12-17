@@ -65,7 +65,7 @@ jobs:
       run: |
         docker build -t ghcr.io/neuro-inc/${{ needs.info.outputs.name }}:latest .
     - name: Store image in run's artifacts
-      uses: neuro-inc/upload-image-action@v21.9.3
+      uses: neuro-inc/upload-image-action@v21.9.2
       with:
         image: ${{ needs.info.outputs.name }}
         token: ${{ secrets.GITHUB_TOKEN }}

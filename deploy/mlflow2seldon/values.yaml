@@ -20,5 +20,5 @@ serviceConfigs:
   M2S_SELDON_DEPLOYMENT_NS: seldon
 
 imagePullSecrets: []
-svc_image: neuromation/neuro-mlflow2seldon:latest
+svc_image: ghcr.io/neuro-inc/neuro-mlflow2seldon:latest
 resources: {}

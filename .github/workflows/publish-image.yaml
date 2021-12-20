@@ -2,10 +2,8 @@ name: Publish Image
 
 on:
   workflow_run:
-    workflows:
-      - CD
-    types:
-      - completed
+    workflows: ["CD"]
+    types: ["completed"]
 
 permissions:
   contents: read

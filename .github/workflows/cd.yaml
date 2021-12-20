@@ -73,6 +73,5 @@ jobs:
       id: release
       uses: neuro-inc/release-image-action@v21.9.36
       with:
-        github: ${{ toJson(github) }}
         image: ${{ needs.info.outputs.name }}
         token: ${{ secrets.GH_TOKEN }}

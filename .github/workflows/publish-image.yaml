@@ -65,7 +65,7 @@ jobs:
         fetch-depth: 0
     - name: Build release image
       run: |
-        docker build -t ghcr.io/neuro-inc/${{ needs.info.outputs.name }}:latest .
+        docker build -t ${{ needs.info.outputs.name }} .
     - name: Store image in run's artifacts
       uses: neuro-inc/upload-image-action@v21.9.2
       with:

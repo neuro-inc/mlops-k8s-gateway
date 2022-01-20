@@ -3,7 +3,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: seldon-deploy-manager
+  name: {{ .Release.Name }}-seldon-deploy-manager
   namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
 rules:
 - apiGroups: ["machinelearning.seldon.io"]
@@ -13,7 +13,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: seldon-secrets-manager
+  name: {{ .Release.Name }}-seldon-secrets-manager
   namespace: {{ .Values.serviceConfigs.M2S_SELDON_DEPLOYMENT_NS }}
 rules:
 - apiGroups: [""]

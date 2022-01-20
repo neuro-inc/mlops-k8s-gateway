@@ -1,6 +1,7 @@
+RELEASE_NAME ?= mlflow2seldon
 HELM_CHART = mlflow2seldon
 
-SVC_DEPLOYMENT_NAMESPACE = mlops-integrations
+DEPLOYMENT_NAMESPACE ?= mlops-integrations
 
 M2S_MLFLOW_NEURO_TOKEN ?= $(shell neuro config show-token)
 M2S_MLFLOW_HOST ?= $(shell read -p "MLFlow server hostname: " x; echo $$x)
@@ -21,9 +22,9 @@ format:
 
 _helm_fetch:
 	rm -rf temp_deploy
-	mkdir -p temp_deploy/$(HELM_CHART)
-	cp -Rf deploy/$(HELM_CHART) temp_deploy/
-	find temp_deploy/$(HELM_CHART) -type f -name 'values*' -delete
+	mkdir -p temp_deploy/$(RELEASE_NAME)
+	cp -RfT deploy/$(HELM_CHART) temp_deploy/$(RELEASE_NAME)
+	find temp_deploy/$(RELEASE_NAME) -type f -name 'values*' -delete
 
 _helm_expand_vars:
 	export M2S_MLFLOW_NEURO_TOKEN=$(M2S_MLFLOW_NEURO_TOKEN); \
@@ -32,14 +33,14 @@ _helm_expand_vars:
 	export M2S_SELDON_NEURO_DEF_IMAGE=$(M2S_SELDON_NEURO_DEF_IMAGE); \
 	export M2S_SRC_NEURO_CLUSTER=$(M2S_SRC_NEURO_CLUSTER); \
 	neuro config switch-cluster $${M2S_SRC_NEURO_CLUSTER}; \
-	cat deploy/$(HELM_CHART)/values-make.yaml | envsubst > temp_deploy/$(HELM_CHART)/values-make.yaml
-	cp deploy/$(HELM_CHART)/values.yaml temp_deploy/$(HELM_CHART)/values.yaml
-	helm lint temp_deploy/$(HELM_CHART) -f temp_deploy/$(HELM_CHART)/values.yaml -f temp_deploy/$(HELM_CHART)/values-make.yaml
+	cat deploy/$(HELM_CHART)/values-make.yaml | envsubst > temp_deploy/$(RELEASE_NAME)/values-make.yaml
+	cp deploy/$(HELM_CHART)/values.yaml temp_deploy/$(RELEASE_NAME)/values.yaml
+	helm lint temp_deploy/$(RELEASE_NAME) -f temp_deploy/$(RELEASE_NAME)/values.yaml -f temp_deploy/$(RELEASE_NAME)/values-make.yaml
 
 helm_deploy: _helm_fetch _helm_expand_vars
-	helm upgrade $(HELM_CHART) \
-		temp_deploy/$(HELM_CHART) -f temp_deploy/$(HELM_CHART)/values.yaml -f temp_deploy/$(HELM_CHART)/values-make.yaml \
-		--create-namespace --namespace $(SVC_DEPLOYMENT_NAMESPACE) --install --wait --timeout 600s
+	helm upgrade $(RELEASE_NAME) \
+		temp_deploy/$(RELEASE_NAME) -f temp_deploy/$(RELEASE_NAME)/values.yaml -f temp_deploy/$(RELEASE_NAME)/values-make.yaml \
+		--create-namespace --namespace $(DEPLOYMENT_NAMESPACE) --install --wait --timeout 600s
 
 helm_delete:
-	helm uninstall --namespace $(SVC_DEPLOYMENT_NAMESPACE) $(HELM_CHART)
+	helm uninstall --namespace $(DEPLOYMENT_NAMESPACE) $(RELEASE_NAME)

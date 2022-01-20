@@ -33,8 +33,6 @@ Given that, all the interaction with the service is done implicitly via the MLFl
 ## Cleanup
 - `make helm_delete` - will delete:
     - all created by this helm chart resources, required for this service and the service itself;
-    - Kubernetes namespace (and as a result all the resources within it), where SeldonDeployments were creating (M2S_SELDON_DEPLOYMENT_NS);
-
 
 # Got questions or suggestions?
 

@@ -17,7 +17,7 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ .Values.serviceAccountName }}
+      serviceAccountName: {{ .Release.Name }}-{{ .Values.serviceAccountName }}
       containers:
         - name: {{ .Chart.Name }}
           image: {{ .Values.svc_image }}
@@ -27,7 +27,7 @@ spec:
             - name: {{ $envK }}
               valueFrom:
                 secretKeyRef:
-                  name: {{ $.Values.serviceConfigName }}
+                  name: {{ $.Release.Name }}-{{ $.Values.serviceConfigName }}
                   key: {{ $envK }}
             {{- end }}
           command:

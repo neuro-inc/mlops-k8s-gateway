@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Secret
 type: Opaque
 metadata:
-  name: {{ .Values.serviceConfigName }}
+  name: {{ .Release.Name }}-{{ .Values.serviceConfigName }}
   namespace: {{ .Release.Namespace }}
 data:
   {{- range $envK, $envV := .Values.serviceConfigs }}

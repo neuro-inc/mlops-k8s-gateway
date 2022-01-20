@@ -16,7 +16,7 @@ serviceConfigs:
   # Assumption: deployment image is located within the same cluster, where MLFlow server is running
   M2S_MLFLOW_DEPLOY_IMG_TAG: deployment-image
   M2S_SELDON_NEURO_DEF_IMAGE:
-  # namespace, where to deploy SeldonDeploymentss
+  # namespace, where to deploy SeldonDeployments, SeldonCore should be configured to monitor it and the namespace itself should be created.
   M2S_SELDON_DEPLOYMENT_NS: seldon
 
 imagePullSecrets: []

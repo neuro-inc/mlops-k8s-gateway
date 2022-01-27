@@ -2,9 +2,8 @@
 serviceAccountName: mlflow2seldon-sa
 
 serviceConfigName: mlflow2seldon-config
+# these placeholders will be replaced with their values in a Makefile
 serviceConfigs:
-  # these placeholders will be replaced with their values in a Makefile
-  M2S_NEURO_REGISTRY_SECRET: neuro-registry-auth
   # token to login on the platform cluster, where the MLFlow server is running
   M2S_MLFLOW_NEURO_TOKEN:
   M2S_MLFLOW_HOST:
